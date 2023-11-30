@@ -64,8 +64,30 @@ if uploaded_file is not None:
     else:
         st.error("Недостаточно места для сохранения файла.")
 
+youtube_url = st.text_input('Enter a YouTube URL')
+if youtube_url:
+    yt = YouTube(youtube_url)
+    stream = yt.streams.filter(file_extension='mp4').first()
+    if stream:
+        # Скачиваем видео
+        youtube_video_path = stream.download(output_path=tempfile.gettempdir())
 
-ХХХХХХ
+        # Проверяем наличие свободного места
+        if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
+            # Обрабатываем скачанное видео с помощью YOLO
+            model = YOLO('best.pt')
+            results = model(youtube_video_path, stream=True)
+
+            # Сохраняем обработанное видео в указанную директорию
+            final_output_path = os.path.join(SAVE_DIRECTORY, os.path.basename(youtube_video_path))
+            shutil.move(youtube_video_path, final_output_path)
+            st.video(final_output_path)
+        else:
+            st.error("Недостаточно места для сохранения файла.")
+    else:
+        st.error("Не удалось найти подходящий поток видео.")
+
+
 
 
 # Загрузка и обработка видео с YouTube
