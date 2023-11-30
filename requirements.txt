@@ -1,5 +1,6 @@
 
-
+pip==23.31
+numpy==1.22.2
 streamlit==1.9.0
 ultralytics
 pytube
