@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, 'https://github.com/NataGoto/my_first_app1/blob/main/builder.py')
+sys.path.insert(0, 'https://github.com/NataGoto/Evo_test/blob/main/builder.py')
 import streamlit as st
 from PIL import Image
 from tensorflow.keras.models import load_model
