@@ -73,7 +73,8 @@ if uploaded_file is not None:
     else:
         st.error("Недостаточно места для сохранения файла.")
 
-youtube_url = st.text_input('Enter a YouTube URL')
+
+youtube_url = st.text_input('Enter a YouTube URL', key='youtube_url_input')
 if youtube_url:
     yt = YouTube(youtube_url)
     stream = yt.streams.filter(file_extension='mp4').first()
