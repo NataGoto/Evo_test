@@ -82,3 +82,35 @@ if youtube_url:
     else:
         st.error("Недостаточно места для сохранения файла.")
 
+
+
+# Функция для преобразования результатов в JSON, CSV, текст
+def convert_results_to_formats(results):
+    df = results.pandas().xyxy[0]  # Преобразование результатов YOLO в DataFrame
+    json_result = df.to_json(orient="records")
+    csv_result = df.to_csv(index=False)
+    text_result = df.to_string()
+    return json_result, csv_result, text_result
+
+# Streamlit интерфейс для скачивания результатов
+if uploaded_file is not None:
+    # Обработка файла
+    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
+        processed_file_path, results = process_and_save(uploaded_file, SAVE_DIRECTORY)
+        
+        # Отображение обработанного файла
+        if uploaded_file.type.split('/')[0] == 'image':
+            st.image(processed_file_path, caption='Processed Image')
+        elif uploaded_file.type.split('/')[0] == 'video':
+            st.video(processed_file_path)
+
+        # Преобразование результатов и создание кнопок для скачивания
+        if results:
+            json_result, csv_result, text_result = convert_results_to_formats(results)
+            st.download_button('Download JSON', json_result, file_name='results.json')
+            st.download_button('Download CSV', csv_result, file_name='results.csv')
+            st.download_button('Download Text', text_result, file_name='results.txt')
+    else:
+        st.error("Недостаточно места для сохранения файла.")
+
+
