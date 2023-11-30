@@ -130,4 +130,3 @@ if uploaded_file is not None:
         st.error("Недостаточно места для сохранения файла.")
 
 remove_old_files(PROCESSED_VIDEOS_PATH)
-git_commit_changes()
