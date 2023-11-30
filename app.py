@@ -9,13 +9,14 @@ import tempfile
 import time
 import pandas as pd
 import shutil
-
+import subprocess 
 # Добавляем текущую директорию в путь поиска модулей
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
 
-# Путь к папке для сохранения обработанных файлов
-SAVE_DIRECTORY = 'processed_videos'
+GIT_REPO_PATH = '/https://github.com/NataGoto/Evo_test'
+PROCESSED_VIDEOS_PATH = os.path.join(GIT_REPO_PATH, 'processed_videos') 
+
 
 # Функция для проверки свободного места на диске
 def check_disk_space(directory, max_size_mb):
@@ -44,6 +45,14 @@ def process_and_save(uploaded_file, save_directory):
     shutil.move(temp_output_path, final_output_path)
     return final_output_path
 
+def git_commit_changes():
+    try:
+        subprocess.run(['git', '-C', GIT_REPO_PATH, 'add', '.'], check=True)
+        subprocess.run(['git', '-C', GIT_REPO_PATH, 'commit', '-m', 'Update processed videos'], check=True)
+        subprocess.run(['git', '-C', GIT_REPO_PATH, 'push'], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Ошибка при выполнении команды Git: {e}")
+        
 # Streamlit интерфейс
 st.title('Evodrone Test')
 
@@ -133,4 +142,5 @@ if uploaded_file is not None:
     else:
         st.error("Недостаточно места для сохранения файла.")
 
-
+remove_old_files(PROCESSED_VIDEOS_PATH)
+git_commit_changes()
