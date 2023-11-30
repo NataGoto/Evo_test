@@ -10,6 +10,7 @@ import time
 import pandas as pd
 import shutil
 import subprocess 
+import numpy as np 
 # Добавляем текущую директорию в путь поиска модулей
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
