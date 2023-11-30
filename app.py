@@ -52,6 +52,15 @@ def process_and_save(uploaded_file, save_directory):
 # Streamlit интерфейс
 st.title('Evodrone Test')
 
+
+# Загрузка файла
+uploaded_file = st.file_uploader("Upload a file", type=["png", "jpg", "mp4", "avi"])
+
+# После загрузки файла, обрабатываем его
+if uploaded_file is not None:
+    # Ваш код для обработки файла
+    # ...
+
 # Загрузка и обработка изображения
 image_file = st.file_uploader('Upload an image', type=['png', 'jpg'])
 if image_file is not None:
@@ -62,7 +71,7 @@ if image_file is not None:
         st.error("Недостаточно места для сохранения файла.")
 
 # Загрузка и обработка видео
-video_file = st.file_uploader('Upload a video', type=['mp4'])
+video_file = st.file_uploader('Upload a video', type=['mp4', 'avi'])
 if video_file is not None:
     if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
         processed_video_path = process_and_save(video_file, SAVE_DIRECTORY)
