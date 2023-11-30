@@ -28,20 +28,15 @@ def check_disk_space(directory, max_size_mb):
 
 # Функция для обработки и сохранения изображения или видео
 def process_and_save(uploaded_file, save_directory):
-    # Проверяем, достаточно ли места для сохранения файла
-    if not check_disk_space(save_directory, max_size_mb=512):
-        print("Недостаточно места на диске для сохранения файла")
-        return None
-
-    # Определяем путь к временному файлу
+    # Путь к временному файлу
     temp_output_path = tempfile.mktemp(suffix=f'.{uploaded_file.type.split("/")[-1]}')
     
-    # Записываем содержимое загруженного файла во временный файл
+    # Запись содержимого загруженного файла во временный файл
     with open(temp_output_path, 'wb') as file:
         file.write(uploaded_file.getvalue())
 
     # Обработка файла моделью YOLO
-    model = YOLO('best.pt')  # Убедитесь, что у вас установлена модель
+    model = YOLO('best.pt')
     results = model(temp_output_path, stream=True)
 
     # Перемещаем файл в директорию репозитория
@@ -52,32 +47,26 @@ def process_and_save(uploaded_file, save_directory):
 # Streamlit интерфейс
 st.title('Evodrone Test')
 
-
 # Загрузка файла
 uploaded_file = st.file_uploader("Upload a file", type=["png", "jpg", "mp4", "avi"])
 
 # После загрузки файла, обрабатываем его
 if uploaded_file is not None:
-    # Ваш код для обработки файла
-    # ...
-
-# Загрузка и обработка изображения
-image_file = st.file_uploader('Upload an image', type=['png', 'jpg'])
-if image_file is not None:
+    # Проверяем, достаточно ли места для сохранения файла
     if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
-        processed_image_path = process_and_save(image_file, SAVE_DIRECTORY)
-        st.image(processed_image_path, caption='Processed Image')
+        processed_file_path = process_and_save(uploaded_file, SAVE_DIRECTORY)
+        
+        # Отображаем обработанный файл в зависимости от его типа
+        if uploaded_file.type in ["image/png", "image/jpeg"]:
+            st.image(processed_file_path, caption='Processed Image')
+        elif uploaded_file.type in ["video/mp4", "video/avi"]:
+            st.video(processed_video_path)
     else:
         st.error("Недостаточно места для сохранения файла.")
 
-# Загрузка и обработка видео
-video_file = st.file_uploader('Upload a video', type=['mp4', 'avi'])
-if video_file is not None:
-    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
-        processed_video_path = process_and_save(video_file, SAVE_DIRECTORY)
-        st.video(processed_video_path)
-    else:
-        st.error("Недостаточно места для сохранения файла.")
+
+ХХХХХХ
+
 
 # Загрузка и обработка видео с YouTube
 youtube_url = st.text_input('Enter a YouTube URL')
