@@ -8,15 +8,14 @@ from pytube import YouTube
 import tempfile
 import time
 import pandas as pd
-
+import shutil
 
 # Добавляем текущую директорию в путь поиска модулей
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
 
-
 # Путь к папке для сохранения обработанных файлов
-SAVE_DIRECTORY = 'https://github.com/NataGoto/Evo_test/tree/main/processed_videos'
+SAVE_DIRECTORY = 'processed_videos'
 
 # Функция для проверки свободного места на диске
 def check_disk_space(directory, max_size_mb):
@@ -28,94 +27,58 @@ def check_disk_space(directory, max_size_mb):
     return (total_size / (1024 * 1024)) <= max_size_mb
 
 # Функция для обработки и сохранения изображения или видео
-def process_and_save(image_or_video, save_directory, max_size_mb=100):
+def process_and_save(uploaded_file, save_directory):
+    # Проверяем, достаточно ли места для сохранения файла
     if not check_disk_space(save_directory, max_size_mb=512):
-        st.error("Недостаточно места на диске для сохранения файла")
+        print("Недостаточно места на диске для сохранения файла")
         return None
 
-    model = YOLO('best.pt')  # Указываем путь к вашей модели YOLO
-
-
-st.title('Evodrone Test')
-
-# Пример загрузки файла
-uploaded_file = st ### ЧТО ЭТО?????
-
-def process(image_or_video):
-    model = YOLO('best.pt')
-    results = model(image_or_video, stream=True)
+    # Определяем путь к временному файлу
+    temp_output_path = tempfile.mktemp(suffix=f'.{uploaded_file.type.split("/")[-1]}')
     
-    # Обработка видео
-    if isinstance(image_or_video, str) and image_or_video.endswith(('.mp4', '.avi')):
-        output_path = tempfile.mktemp(suffix='.mp4')
-        results.save(output_path)
-        return output_path, results
+    # Записываем содержимое загруженного файла во временный файл
+    with open(temp_output_path, 'wb') as file:
+        file.write(uploaded_file.getvalue())
 
-    # Обработка изображения
-    else:
-        result_image = results.render()[0]
-        pil_image = Image.fromarray(result_image)
-        return pil_image, results
+    # Обработка файла моделью YOLO
+    model = YOLO('best.pt')  # Убедитесь, что у вас установлена модель
+    results = model(temp_output_path, stream=True)
 
-def remove_old_files(directory, age_limit=1800):  # 1800 секунд = 30 минут
-    current_time = time.time()
-    for filename in os.listdir(directory):
-        file_path = os.path.join(directory, filename)
-        if os.path.isfile(file_path):
-            creation_time = os.path.getctime(file_path)
-            if (current_time - creation_time) > age_limit:
-                os.remove(file_path)
-                print(f"Removed old file: {filename}")
+    # Перемещаем файл в директорию репозитория
+    final_output_path = os.path.join(save_directory, uploaded_file.name)
+    shutil.move(temp_output_path, final_output_path)
+    return final_output_path
 
-st.title('Evodrone test')
-
-remove_old_files("path/to/processed_videos")
+# Streamlit интерфейс
+st.title('Evodrone Test')
 
 # Загрузка и обработка изображения
 image_file = st.file_uploader('Upload an image', type=['png', 'jpg'])
 if image_file is not None:
-    with st.spinner('Processing...'):
-        image, results = process(image_file)
-        st.image(image, caption='Processed Image')
-        result_df = results.pandas().xyxy[0]
-        result_json = result_df.to_json(orient="records")
-        result_txt = result_df.to_string()
-        result_csv = result_df.to_csv()
-        st.json(result_json)
-        st.download_button('Download JSON', result_json, file_name='results.json')
-        st.text(result_txt)
-        st.download_button('Download Text', result_txt, file_name='results.txt')
-        st.download_button('Download CSV', result_csv, file_name='results.csv')
+    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
+        processed_image_path = process_and_save(image_file, SAVE_DIRECTORY)
+        st.image(processed_image_path, caption='Processed Image')
+    else:
+        st.error("Недостаточно места для сохранения файла.")
 
 # Загрузка и обработка видео
 video_file = st.file_uploader('Upload a video', type=['mp4'])
 if video_file is not None:
-    with st.spinner('Processing...'):
-        video_path, _ = process(video_file)
-        st.video(video_path)
-        st.download_button('Download Processed Video', video_path, file_name='processed_video.mp4')
-        st.caption("Note: Files are stored for only 30 minutes.")
+    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
+        processed_video_path = process_and_save(video_file, SAVE_DIRECTORY)
+        st.video(processed_video_path)
+    else:
+        st.error("Недостаточно места для сохранения файла.")
 
 # Загрузка и обработка видео с YouTube
 youtube_url = st.text_input('Enter a YouTube URL')
 if youtube_url:
-    with st.spinner('Downloading and Processing...'):
-        yt = YouTube(youtube_url)
-        stream = yt.streams.filter(file_extension='mp4').first()
-        video_path = stream.download()
-        processed_video_path, _ = process(video_path)
-        st.video(processed_video_path)
-        st.download_button('Download Processed Video', processed_video_path, file_name='processed_video.mp4')
-        st.caption("Note: Files are stored for only 30 minutes.")
-
-
-    # Здесь должен быть ваш код для обработки файла с помощью YOLO
-
-    # Пример обработки (необходимо дополнить вашей специфической логикой):
-    # results = model(image_or_video, stream=True)
-
-    # Предполагаем, что results - это путь к обработанному файлу
-    # Сохраняем результаты в папке SAVE_DIRECTORY
-    # shutil.move(results, os.path.join(SAVE_DIRECTORY, os.path.basename(results)))
-    # return os.path.join(SAVE_DIRECTORY, os.path.basename(results))
+    yt = YouTube(youtube_url)
+    stream = yt.streams.filter(file_extension='mp4').first()
+    youtube_video = stream.download()
+    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
+        processed_youtube_video_path = process_and_save(youtube_video, SAVE_DIRECTORY)
+        st.video(processed_youtube_video_path)
+    else:
+        st.error("Недостаточно места для сохранения файла.")
 
