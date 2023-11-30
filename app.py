@@ -14,8 +14,6 @@ import subprocess
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
 
-GIT_REPO_PATH = '/https://github.com/NataGoto/Evo_test'
-PROCESSED_VIDEOS_PATH = os.path.join(GIT_REPO_PATH, 'processed_videos') 
 
 
 # Функция для проверки свободного места на диске
@@ -40,18 +38,6 @@ def process_and_save(uploaded_file, save_directory):
     model = YOLO('best.pt')
     results = model(temp_output_path, stream=True)
 
-    # Перемещаем файл в директорию репозитория
-    final_output_path = os.path.join(save_directory, uploaded_file.name)
-    shutil.move(temp_output_path, final_output_path)
-    return final_output_path
-
-def git_commit_changes():
-    try:
-        subprocess.run(['git', '-C', GIT_REPO_PATH, 'add', '.'], check=True)
-        subprocess.run(['git', '-C', GIT_REPO_PATH, 'commit', '-m', 'Update processed videos'], check=True)
-        subprocess.run(['git', '-C', GIT_REPO_PATH, 'push'], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при выполнении команды Git: {e}")
         
 # Streamlit интерфейс
 st.title('Evodrone Test')
