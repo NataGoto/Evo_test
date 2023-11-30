@@ -1,46 +1,85 @@
-import sys
-sys.path.insert(0, 'https://github.com/NataGoto/Evo_test/blob/main/builder.py')
-import streamlit as st
-from PIL import Image
-from tensorflow.keras.models import load_model
-import numpy as np
-import sys
 import os
+import sys
+import streamlit as st
+from ultralytics import YOLO
+from PIL import Image
+import json
+from pytube import YouTube
+import tempfile
+import time
+import pandas as pd
+
 
 # Добавляем текущую директорию в путь поиска модулей
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
 
-# Теперь можно импортировать другие модули, включая builder.py
+def process(image_or_video):
+    model = YOLO('best.pt')
+    results = model(image_or_video, stream=True)
+    
+    # Обработка видео
+    if isinstance(image_or_video, str) and image_or_video.endswith(('.mp4', '.avi')):
+        output_path = tempfile.mktemp(suffix='.mp4')
+        results.save(output_path)
+        return output_path, results
 
-# Интеграция функции process прямо в app.py
-def process(image_file):
-    MODEL_NAME = 'model_air.h5'  # Убедитесь, что путь к модели указан правильно
-    model = load_model(MODEL_NAME)
-    INPUT_SHAPE = (256, 456, 3)
+    # Обработка изображения
+    else:
+        result_image = results.render()[0]
+        pil_image = Image.fromarray(result_image)
+        return pil_image, results
 
-    image = Image.open(image_file)
-    resized_image = image.resize((INPUT_SHAPE[1], INPUT_SHAPE[0]))
-    array = np.array(resized_image)[..., :3][np.newaxis, ...]
-    prediction_array = (255 * model.predict(array)).astype(int)
-    prediction_array = np.split(prediction_array, 2, axis=-1)[0]
-    zeros = np.zeros_like(prediction_array)
-    ones = np.ones_like(prediction_array)
-    prediction_array_4d = np.concatenate([255 * (prediction_array > 100), zeros, zeros, 128 * ones], axis=3)[0].astype(np.uint8)
-    mask_image = Image.fromarray(prediction_array_4d).resize(image.size)
-    image.paste(mask_image, (0, 0), mask_image)
-    return resized_image, prediction_array, image
+def remove_old_files(directory, age_limit=1800):  # 1800 секунд = 30 минут
+    current_time = time.time()
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            creation_time = os.path.getctime(file_path)
+            if (current_time - creation_time) > age_limit:
+                os.remove(file_path)
+                print(f"Removed old file: {filename}")
 
-# Код приложения Streamlit
-st.title('Images segmentation demo')
-image_file = st.file_uploader('Load an image', type=['png', 'jpg'])
+st.title('Evodrone test')
 
+remove_old_files("path/to/processed_videos")
+
+# Загрузка и обработка изображения
+image_file = st.file_uploader('Upload an image', type=['png', 'jpg'])
 if image_file is not None:
-    col1, col2 = st.columns(2)
-    image = Image.open(image_file)
-    results = process(image_file)
-    col1.text('Source image')
-    col1.image(results[0])
-    col2.text('Mask')
-    col2.image(results[1])
-    st.image(results[2])
+    with st.spinner('Processing...'):
+        image, results = process(image_file)
+        st.image(image, caption='Processed Image')
+        result_df = results.pandas().xyxy[0]
+        result_json = result_df.to_json(orient="records")
+        result_txt = result_df.to_string()
+        result_csv = result_df.to_csv()
+        st.json(result_json)
+        st.download_button('Download JSON', result_json, file_name='results.json')
+        st.text(result_txt)
+        st.download_button('Download Text', result_txt, file_name='results.txt')
+        st.download_button('Download CSV', result_csv, file_name='results.csv')
+
+# Загрузка и обработка видео
+video_file = st.file_uploader('Upload a video', type=['mp4'])
+if video_file is not None:
+    with st.spinner('Processing...'):
+        video_path, _ = process(video_file)
+        st.video(video_path)
+        st.download_button('Download Processed Video', video_path, file_name='processed_video.mp4')
+        st.caption("Note: Files are stored for only 30 minutes.")
+
+# Загрузка и обработка видео с YouTube
+youtube_url = st.text_input('Enter a YouTube URL')
+if youtube_url:
+    with st.spinner('Downloading and Processing...'):
+        yt = YouTube(youtube_url)
+        stream = yt.streams.filter(file_extension='mp4').first()
+        video_path = stream.download()
+        processed_video_path, _ = process(video_path)
+        st.video(processed_video_path)
+        st.download_button('Download Processed Video', processed_video_path, file_name='processed_video.mp4')
+        st.caption("Note: Files are stored for only 30 minutes.")
+
+
+
