@@ -14,6 +14,33 @@ import pandas as pd
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
 
+
+# Путь к папке для сохранения обработанных файлов
+SAVE_DIRECTORY = 'https://github.com/NataGoto/Evo_test/tree/main/processed_videos'
+
+# Функция для проверки свободного места на диске
+def check_disk_space(directory, max_size_mb):
+    total_size = 0
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            total_size += os.path.getsize(file_path)
+    return (total_size / (1024 * 1024)) <= max_size_mb
+
+# Функция для обработки и сохранения изображения или видео
+def process_and_save(image_or_video, save_directory, max_size_mb=100):
+    if not check_disk_space(save_directory, max_size_mb=512):
+        st.error("Недостаточно места на диске для сохранения файла")
+        return None
+
+    model = YOLO('best.pt')  # Указываем путь к вашей модели YOLO
+
+
+st.title('Evodrone Test')
+
+# Пример загрузки файла
+uploaded_file = st ### ЧТО ЭТО?????
+
 def process(image_or_video):
     model = YOLO('best.pt')
     results = model(image_or_video, stream=True)
@@ -82,4 +109,13 @@ if youtube_url:
         st.caption("Note: Files are stored for only 30 minutes.")
 
 
+    # Здесь должен быть ваш код для обработки файла с помощью YOLO
+
+    # Пример обработки (необходимо дополнить вашей специфической логикой):
+    # results = model(image_or_video, stream=True)
+
+    # Предполагаем, что results - это путь к обработанному файлу
+    # Сохраняем результаты в папке SAVE_DIRECTORY
+    # shutil.move(results, os.path.join(SAVE_DIRECTORY, os.path.basename(results)))
+    # return os.path.join(SAVE_DIRECTORY, os.path.basename(results))
 
