@@ -28,7 +28,7 @@ youtube_url = st.text_input('Enter a YouTube URL', key='youtube_url_input')
 
 # Функция для преобразования результатов в JSON, CSV, текст
 def convert_results_to_formats(results):
-    df = results.pandas().xyxy[0]  # Преобразование результатов YOLO в DataFrame
+    df = pd.DataFrame(results)  # Преобразование списка словарей в DataFrame
     json_result = df.to_json(orient="records")
     csv_result = df.to_csv(index=False)
     text_result = df.to_string()
