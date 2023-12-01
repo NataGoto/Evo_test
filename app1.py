@@ -23,10 +23,18 @@ model = YOLO('best.pt')
 
 # Загрузка изображения
 uploaded_image = st.file_uploader("Upload an image", type=["png", "jpg"], key='image_uploader')
+if uploaded_image is not None:
+    # Сохраняем загруженное изображение во временный файл
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp_file:
+        tmp_file.write(uploaded_image.read())
+        tmp_file_path = tmp_file.name
 
-# Define path to the image file
-source = uploaded_image
+    # Выполнение предсказания
+    results = model(tmp_file_path)
 
-# Run inference on the source
-results = model(source)  # list of Results objects
+    # Получение аннотированного изображения
+    annotated_image = Image.fromarray(np.squeeze(results.render()))
+
+    # Отображение обработанного изображения
+    st.image(annotated_image, caption='Processed Image')
 
