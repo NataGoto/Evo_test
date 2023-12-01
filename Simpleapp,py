@@ -6,7 +6,6 @@ from PIL import Image
 import json
 from pytube import YouTube
 import tempfile
-import time
 import pandas as pd
 import shutil
 import numpy as np 
