@@ -9,42 +9,22 @@ import tempfile
 import pandas as pd
 import shutil
 import numpy as np 
+
 # Добавляем текущую директорию в путь поиска модулей
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_directory)
 
-        
 # Streamlit интерфейс
 st.title('Evodrone Test')
 
-# Загрузка файла
-uploaded_file = st.file_uploader("Upload a file", type=["png", "jpg", "mp4", "avi"])
+# Загрузка изображения
+uploaded_image = st.file_uploader("Upload an image", type=["png", "jpg"], key='image_uploader')
 
-# После загрузки файла, обрабатываем его
-if uploaded_file is not None:
-    # Проверяем, достаточно ли места для сохранения файла
-    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
-        processed_file_path = process_and_save(uploaded_file, SAVE_DIRECTORY)
-        
-        # Отображаем обработанный файл в зависимости от его типа
-        if uploaded_file.type in ["image/png", "image/jpeg"]:
-            st.image(processed_file_path, caption='Processed Image')
-        elif uploaded_file.type in ["video/mp4", "video/avi"]:
-            st.video(processed_video_path)
-    else:
-        st.error("Недостаточно места для сохранения файла.")
+# Загрузка видео
+uploaded_video = st.file_uploader("Upload a video", type=["mp4", "avi"], key='video_uploader')
 
-
+# Ввод YouTube URL
 youtube_url = st.text_input('Enter a YouTube URL', key='youtube_url_input')
-if youtube_url:
-    yt = YouTube(youtube_url)
-    stream = yt.streams.filter(file_extension='mp4').first()
-    if stream:
-        # Скачиваем видео
-        youtube_video_path = stream.download(output_path=tempfile.gettempdir())
-    youtube_video = stream.download()
-
-
 
 # Функция для преобразования результатов в JSON, CSV, текст
 def convert_results_to_formats(results):
@@ -54,31 +34,50 @@ def convert_results_to_formats(results):
     text_result = df.to_string()
     return json_result, csv_result, text_result
 
-# Streamlit интерфейс для скачивания результатов
-if uploaded_file is not None:
-    # Обработка файла
-    if check_disk_space(SAVE_DIRECTORY, max_size_mb=512):
-        processed_file_path, results = process_and_save(uploaded_file, SAVE_DIRECTORY)
-        
-        # Отображение обработанного файла
-        if uploaded_file.type.split('/')[0] == 'image':
-            st.image(processed_file_path, caption='Processed Image')
-        elif uploaded_file.type.split('/')[0] == 'video':
-            st.video(processed_file_path)
+# Обработка загруженного изображения
+if uploaded_image is not None:
+    model = YOLO('best.pt')
+    results = model(uploaded_image, stream=True)
 
-        # Преобразование результатов и создание кнопок для скачивания
-        if results:
-            json_result, csv_result, text_result = convert_results_to_formats(results)
-            st.download_button('Download JSON', json_result, file_name='results.json')
-            st.download_button('Download CSV', csv_result, file_name='results.csv')
-            st.download_button('Download Text', text_result, file_name='results.txt')
-# Обрабатываем скачанное видео с помощью YOLO
-model = YOLO('best.pt')
-results = model(youtube_video_path, stream=True)
+    # Отображение обработанного изображения
+    st.image(uploaded_image, caption='Processed Image')
 
-# Показываем результаты предикта
-st.write(results)
+    # Преобразование результатов и создание кнопок для скачивания
+    if results:
+        json_result, csv_result, text_result = convert_results_to_formats(results)
+        st.download_button('Download JSON', json_result, file_name='results.json')
+        st.download_button('Download CSV', csv_result, file_name='results.csv')
+        st.download_button('Download Text', text_result, file_name='results.txt')
 
+# Обработка загруженного видео
+if uploaded_video is not None:
+    model = YOLO('best.pt')
+    results = model(uploaded_video, stream=True)
+
+    # Отображение обработанного видео
+    st.video(uploaded_video)
+
+    # Преобразование результатов и создание кнопок для скачивания
+    if results:
+        json_result, csv_result, text_result = convert_results_to_formats(results)
+        st.download_button('Download JSON', json_result, file_name='results.json')
+        st.download_button('Download CSV', csv_result, file_name='results.csv')
+        st.download_button('Download Text', text_result, file_name='results.txt')
+
+# Обработка YouTube видео
+if youtube_url:
+    yt = YouTube(youtube_url)
+    stream = yt.streams.filter(file_extension='mp4').first()
+    if stream:
+        # Скачиваем видео
+        youtube_video_path = stream.download(output_path=tempfile.gettempdir())
+        model = YOLO('best.pt')
+        results = model(youtube_video_path, stream=True)
+
+        # Показываем результаты предикта
+        st.write(results)
+
+# Кнопка для очистки кэша
 if st.button('Очистить кэш'):
     st.caching.clear_cache()
 
