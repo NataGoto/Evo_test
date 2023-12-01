@@ -30,21 +30,3 @@ source = uploaded_image
 # Run inference on the source
 results = model(source)  # list of Results objects
 
-# Загрузка видео
-uploaded_video = st.file_uploader("Upload a video", type=["mp4", "avi"], key='video_uploader')
-
-# Define path to the image file
-source = uploaded_video
-
-# Run inference on the source
-results = model(source)  # list of Results objects
-
-# Ввод YouTube URL
-youtube_url = st.text_input('Enter a YouTube URL', key='youtube_url_input')
-
-# Define path to the image file
-source = youtube_url
-
-# Run inference on the source
-results = model(source)  # list of Results objects
-
